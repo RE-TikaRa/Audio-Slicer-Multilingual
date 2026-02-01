@@ -1,0 +1,21 @@
+[project]
+name = "audio-slicer"
+version = "1.4.0"
+description = "A simple GUI application that slices audio with silence detection."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+  "librosa",
+  "matplotlib",
+  "numpy",
+  "pyqtdarktheme",
+  "PySide6",
+  "resampy",
+  "samplerate",
+  "scipy",
+  "soundfile",
+  "soxr",
+]
+
+[tool.uv]
+package = false

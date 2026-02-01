@@ -1,0 +1,419 @@
+# -*- coding: utf-8 -*-
+
+from __future__ import annotations
+
+LANGUAGES: dict[str, str] = {
+    "en": "English",
+    "zh-CN": "简体中文",
+    "zh-TW": "繁體中文",
+    "ja": "日本語",
+    "ko": "한국어",
+    "fr": "Français",
+    "de": "Deutsch",
+    "es": "Español",
+    "ru": "Русский",
+    "pt-BR": "Português (Brasil)",
+    "it": "Italiano",
+}
+
+DEFAULT_LANGUAGE = "en"
+
+STRINGS: dict[str, dict[str, str]] = {
+    "window_title": {
+        "en": "Audio Slicer",
+        "zh-CN": "音频切片机",
+        "zh-TW": "音訊切片機",
+        "ja": "オーディオスライサー",
+        "ko": "오디오 슬라이서",
+        "fr": "Découpeur audio",
+        "de": "Audio-Schneider",
+        "es": "Cortador de audio",
+        "ru": "Нарезка аудио",
+        "pt-BR": "Cortador de áudio",
+        "it": "Tagliatore audio",
+    },
+    "add_files": {
+        "en": "Add Audio Files...",
+        "zh-CN": "添加音频文件...",
+        "zh-TW": "新增音訊檔案...",
+        "ja": "音声ファイルを追加...",
+        "ko": "오디오 파일 추가...",
+        "fr": "Ajouter des fichiers audio...",
+        "de": "Audiodateien hinzufügen...",
+        "es": "Agregar archivos de audio...",
+        "ru": "Добавить аудиофайлы...",
+        "pt-BR": "Adicionar arquivos de áudio...",
+        "it": "Aggiungi file audio...",
+    },
+    "about": {
+        "en": "About...",
+        "zh-CN": "关于...",
+        "zh-TW": "關於...",
+        "ja": "情報...",
+        "ko": "정보...",
+        "fr": "À propos...",
+        "de": "Info...",
+        "es": "Acerca de...",
+        "ru": "О программе...",
+        "pt-BR": "Sobre...",
+        "it": "Informazioni...",
+    },
+    "task_list": {
+        "en": "Task List",
+        "zh-CN": "任务列表",
+        "zh-TW": "工作列表",
+        "ja": "タスクリスト",
+        "ko": "작업 목록",
+        "fr": "Liste des tâches",
+        "de": "Aufgabenliste",
+        "es": "Lista de tareas",
+        "ru": "Список задач",
+        "pt-BR": "Lista de tarefas",
+        "it": "Elenco attività",
+    },
+    "remove": {
+        "en": "Remove",
+        "zh-CN": "移除",
+        "zh-TW": "移除",
+        "ja": "削除",
+        "ko": "제거",
+        "fr": "Retirer",
+        "de": "Entfernen",
+        "es": "Eliminar",
+        "ru": "Удалить",
+        "pt-BR": "Remover",
+        "it": "Rimuovi",
+    },
+    "clear_list": {
+        "en": "Clear List",
+        "zh-CN": "清空列表",
+        "zh-TW": "清空列表",
+        "ja": "リストをクリア",
+        "ko": "목록 지우기",
+        "fr": "Effacer la liste",
+        "de": "Liste leeren",
+        "es": "Limpiar lista",
+        "ru": "Очистить список",
+        "pt-BR": "Limpar lista",
+        "it": "Pulisci lista",
+    },
+    "settings": {
+        "en": "Settings",
+        "zh-CN": "设置",
+        "zh-TW": "設定",
+        "ja": "設定",
+        "ko": "설정",
+        "fr": "Paramètres",
+        "de": "Einstellungen",
+        "es": "Configuración",
+        "ru": "Настройки",
+        "pt-BR": "Configurações",
+        "it": "Impostazioni",
+    },
+    "threshold": {
+        "en": "Threshold (dB)",
+        "zh-CN": "阈值 (dB)",
+        "zh-TW": "閾值 (dB)",
+        "ja": "しきい値 (dB)",
+        "ko": "임계값 (dB)",
+        "fr": "Seuil (dB)",
+        "de": "Schwelle (dB)",
+        "es": "Umbral (dB)",
+        "ru": "Порог (дБ)",
+        "pt-BR": "Limite (dB)",
+        "it": "Soglia (dB)",
+    },
+    "min_length": {
+        "en": "Minimum Length (ms)",
+        "zh-CN": "最小长度 (ms)",
+        "zh-TW": "最小長度 (ms)",
+        "ja": "最小長さ (ms)",
+        "ko": "최소 길이 (ms)",
+        "fr": "Longueur minimale (ms)",
+        "de": "Mindestlänge (ms)",
+        "es": "Longitud mínima (ms)",
+        "ru": "Минимальная длина (мс)",
+        "pt-BR": "Comprimento mínimo (ms)",
+        "it": "Lunghezza minima (ms)",
+    },
+    "min_interval": {
+        "en": "Minimum Interval (ms)",
+        "zh-CN": "最小间隔 (ms)",
+        "zh-TW": "最小間隔 (ms)",
+        "ja": "最小間隔 (ms)",
+        "ko": "최소 간격 (ms)",
+        "fr": "Intervalle minimum (ms)",
+        "de": "Mindestabstand (ms)",
+        "es": "Intervalo mínimo (ms)",
+        "ru": "Минимальный интервал (мс)",
+        "pt-BR": "Intervalo mínimo (ms)",
+        "it": "Intervallo minimo (ms)",
+    },
+    "hop_size": {
+        "en": "Hop Size (ms)",
+        "zh-CN": "步长 (ms)",
+        "zh-TW": "步長 (ms)",
+        "ja": "ホップサイズ (ms)",
+        "ko": "홉 크기 (ms)",
+        "fr": "Taille de pas (ms)",
+        "de": "Hop-Größe (ms)",
+        "es": "Tamaño de salto (ms)",
+        "ru": "Шаг (мс)",
+        "pt-BR": "Tamanho do salto (ms)",
+        "it": "Dimensione passo (ms)",
+    },
+    "max_silence": {
+        "en": "Maximum Silence Length (ms)",
+        "zh-CN": "最大静音长度 (ms)",
+        "zh-TW": "最大靜音長度 (ms)",
+        "ja": "最大無音長 (ms)",
+        "ko": "최대 무음 길이 (ms)",
+        "fr": "Silence maximal (ms)",
+        "de": "Max. Stille (ms)",
+        "es": "Silencio máximo (ms)",
+        "ru": "Макс. тишина (мс)",
+        "pt-BR": "Silêncio máximo (ms)",
+        "it": "Silenzio massimo (ms)",
+    },
+    "preview_selection": {
+        "en": "Preview Selection",
+        "zh-CN": "预览选中",
+        "zh-TW": "預覽選取",
+        "ja": "選択をプレビュー",
+        "ko": "선택 미리보기",
+        "fr": "Aperçu de la sélection",
+        "de": "Auswahl anzeigen",
+        "es": "Previsualizar selección",
+        "ru": "Предпросмотр выбора",
+        "pt-BR": "Pré-visualizar seleção",
+        "it": "Anteprima selezione",
+    },
+    "output_directory": {
+        "en": "Output Directory (default to the same as the audio)",
+        "zh-CN": "输出目录（默认与音频同目录）",
+        "zh-TW": "輸出目錄（預設為音訊所在目錄）",
+        "ja": "出力フォルダー（既定は音声と同じ）",
+        "ko": "출력 폴더(기본값: 오디오와 동일)",
+        "fr": "Dossier de sortie (par défaut identique à l'audio)",
+        "de": "Ausgabeordner (Standard: wie Audio)",
+        "es": "Carpeta de salida (igual que el audio por defecto)",
+        "ru": "Папка вывода (по умолчанию как у аудио)",
+        "pt-BR": "Pasta de saída (padrão igual ao áudio)",
+        "it": "Cartella di output (predefinita come l'audio)",
+    },
+    "browse": {
+        "en": "Browse...",
+        "zh-CN": "浏览...",
+        "zh-TW": "瀏覽...",
+        "ja": "参照...",
+        "ko": "찾아보기...",
+        "fr": "Parcourir...",
+        "de": "Durchsuchen...",
+        "es": "Examinar...",
+        "ru": "Обзор...",
+        "pt-BR": "Procurar...",
+        "it": "Sfoglia...",
+    },
+    "open_output_directory": {
+        "en": "Open output directory when finished",
+        "zh-CN": "完成后打开输出目录",
+        "zh-TW": "完成後開啟輸出目錄",
+        "ja": "完了後に出力フォルダーを開く",
+        "ko": "완료 후 출력 폴더 열기",
+        "fr": "Ouvrir le dossier de sortie à la fin",
+        "de": "Ausgabeordner nach Abschluss öffnen",
+        "es": "Abrir la carpeta de salida al finalizar",
+        "ru": "Открыть папку вывода после завершения",
+        "pt-BR": "Abrir a pasta de saída ao concluir",
+        "it": "Apri cartella di output al termine",
+    },
+    "output_format": {
+        "en": "Output Format",
+        "zh-CN": "输出格式",
+        "zh-TW": "輸出格式",
+        "ja": "出力形式",
+        "ko": "출력 형식",
+        "fr": "Format de sortie",
+        "de": "Ausgabeformat",
+        "es": "Formato de salida",
+        "ru": "Формат вывода",
+        "pt-BR": "Formato de saída",
+        "it": "Formato di output",
+    },
+    "language": {
+        "en": "Language",
+        "zh-CN": "语言",
+        "zh-TW": "語言",
+        "ja": "言語",
+        "ko": "언어",
+        "fr": "Langue",
+        "de": "Sprache",
+        "es": "Idioma",
+        "ru": "Язык",
+        "pt-BR": "Idioma",
+        "it": "Lingua",
+    },
+    "start": {
+        "en": "Start",
+        "zh-CN": "开始",
+        "zh-TW": "開始",
+        "ja": "開始",
+        "ko": "시작",
+        "fr": "Démarrer",
+        "de": "Start",
+        "es": "Iniciar",
+        "ru": "Старт",
+        "pt-BR": "Iniciar",
+        "it": "Avvia",
+    },
+    "slicing": {
+        "en": "Slicing...",
+        "zh-CN": "切片中...",
+        "zh-TW": "切片中...",
+        "ja": "切り出し中...",
+        "ko": "분할 중...",
+        "fr": "Découpage...",
+        "de": "Schneide...",
+        "es": "Cortando...",
+        "ru": "Нарезка...",
+        "pt-BR": "Cortando...",
+        "it": "Taglio...",
+    },
+    "about_text": {
+        "en": "Audio Slicer v{version}\nCopyright 2020-2026 OpenVPI Team",
+        "zh-CN": "Audio Slicer v{version}\nCopyright 2020-2026 OpenVPI Team",
+        "zh-TW": "Audio Slicer v{version}\nCopyright 2020-2026 OpenVPI Team",
+        "ja": "Audio Slicer v{version}\nCopyright 2020-2026 OpenVPI Team",
+        "ko": "Audio Slicer v{version}\nCopyright 2020-2026 OpenVPI Team",
+        "fr": "Audio Slicer v{version}\nCopyright 2020-2026 OpenVPI Team",
+        "de": "Audio Slicer v{version}\nCopyright 2020-2026 OpenVPI Team",
+        "es": "Audio Slicer v{version}\nCopyright 2020-2026 OpenVPI Team",
+        "ru": "Audio Slicer v{version}\nCopyright 2020-2026 OpenVPI Team",
+        "pt-BR": "Audio Slicer v{version}\nCopyright 2020-2026 OpenVPI Team",
+        "it": "Audio Slicer v{version}\nCopyright 2020-2026 OpenVPI Team",
+    },
+    "warning_title": {
+        "en": "Warning",
+        "zh-CN": "警告",
+        "zh-TW": "警告",
+        "ja": "警告",
+        "ko": "경고",
+        "fr": "Avertissement",
+        "de": "Warnung",
+        "es": "Advertencia",
+        "ru": "Предупреждение",
+        "pt-BR": "Aviso",
+        "it": "Avviso",
+    },
+    "mp3_warning": {
+        "en": "MP3 is not recommended for saving vocals as it is lossy.\n"
+              "If you want to save disk space, consider using FLAC instead.\n"
+              "Do you want to continue?",
+        "zh-CN": "不建议使用 MP3 保存人声，因为它是有损格式。\n"
+                 "如果想节省磁盘空间，建议改用 FLAC。\n"
+                 "是否继续？",
+        "zh-TW": "不建議使用 MP3 保存人聲，因為它是有損格式。\n"
+                 "若要節省空間，建議改用 FLAC。\n"
+                 "是否繼續？",
+        "ja": "MP3 は不可逆圧縮のため、人声の保存にはおすすめしません。\n"
+              "容量を抑えたい場合は FLAC を検討してください。\n"
+              "続行しますか？",
+        "ko": "MP3는 손실 압축이라 보컬 저장에 권장되지 않습니다.\n"
+              "용량을 줄이려면 FLAC을 고려하세요.\n"
+              "계속하시겠습니까?",
+        "fr": "Le MP3 est déconseillé pour les voix car il est destructif.\n"
+              "Pour économiser de l’espace, utilisez plutôt le FLAC.\n"
+              "Voulez-vous continuer ?",
+        "de": "MP3 ist für Vocals nicht empfohlen, da es verlustbehaftet ist.\n"
+              "Wenn du Speicher sparen willst, nutze lieber FLAC.\n"
+              "Fortfahren?",
+        "es": "No se recomienda MP3 para voces porque es con pérdida.\n"
+              "Si quieres ahorrar espacio, usa FLAC.\n"
+              "¿Deseas continuar?",
+        "ru": "MP3 не рекомендуется для вокала, так как это формат с потерями.\n"
+              "Если хотите сэкономить место, используйте FLAC.\n"
+              "Продолжить?",
+        "pt-BR": "MP3 não é recomendado para vocais por ser com perdas.\n"
+                 "Se quiser economizar espaço, use FLAC.\n"
+                 "Deseja continuar?",
+        "it": "MP3 non è consigliato per le voci perché è lossy.\n"
+              "Se vuoi risparmiare spazio, usa FLAC.\n"
+              "Vuoi continuare?",
+    },
+    "process_not_finished": {
+        "en": "Please wait for slicing to complete!",
+        "zh-CN": "请等待切片完成！",
+        "zh-TW": "請等待切片完成！",
+        "ja": "処理が完了するまでお待ちください！",
+        "ko": "처리가 완료될 때까지 기다려 주세요!",
+        "fr": "Veuillez attendre la fin du découpage !",
+        "de": "Bitte warten, bis der Vorgang abgeschlossen ist!",
+        "es": "¡Espera a que termine el corte!",
+        "ru": "Пожалуйста, дождитесь завершения нарезки!",
+        "pt-BR": "Aguarde o término do corte!",
+        "it": "Attendi il completamento del taglio!",
+    },
+    "slicing_complete": {
+        "en": "Slicing complete!",
+        "zh-CN": "切片完成！",
+        "zh-TW": "切片完成！",
+        "ja": "切り出しが完了しました！",
+        "ko": "분할 완료!",
+        "fr": "Découpage terminé !",
+        "de": "Schneiden abgeschlossen!",
+        "es": "¡Corte completado!",
+        "ru": "Нарезка завершена!",
+        "pt-BR": "Corte concluído!",
+        "it": "Taglio completato!",
+    },
+    "select_audio_files": {
+        "en": "Select Audio Files",
+        "zh-CN": "选择音频文件",
+        "zh-TW": "選擇音訊檔案",
+        "ja": "音声ファイルを選択",
+        "ko": "오디오 파일 선택",
+        "fr": "Sélectionner des fichiers audio",
+        "de": "Audiodateien auswählen",
+        "es": "Seleccionar archivos de audio",
+        "ru": "Выберите аудиофайлы",
+        "pt-BR": "Selecionar arquivos de áudio",
+        "it": "Seleziona file audio",
+    },
+    "preview_no_selection": {
+        "en": "Please select a file in the task list.",
+        "zh-CN": "请先在任务列表中选择一个文件。",
+        "zh-TW": "請先在工作列表中選擇一個檔案。",
+        "ja": "タスクリストからファイルを選択してください。",
+        "ko": "작업 목록에서 파일을 선택하세요.",
+        "fr": "Veuillez sélectionner un fichier dans la liste.",
+        "de": "Bitte eine Datei in der Liste auswählen.",
+        "es": "Selecciona un archivo en la lista.",
+        "ru": "Пожалуйста, выберите файл в списке.",
+        "pt-BR": "Selecione um arquivo na lista.",
+        "it": "Seleziona un file nell'elenco.",
+    },
+}
+
+
+def normalize_language(locale_name: str) -> str:
+    if not locale_name:
+        return DEFAULT_LANGUAGE
+    name = locale_name.replace("-", "_")
+    if name.startswith("zh_CN") or name.startswith("zh_Hans"):
+        return "zh-CN"
+    if name.startswith("zh_TW") or name.startswith("zh_Hant") or name.startswith("zh_HK"):
+        return "zh-TW"
+    if name.startswith("pt_BR"):
+        return "pt-BR"
+    prefix = name.split("_", maxsplit=1)[0]
+    if prefix in LANGUAGES:
+        return prefix
+    return DEFAULT_LANGUAGE
+
+
+def text(key: str, lang: str) -> str:
+    if key not in STRINGS:
+        return key
+    if lang in STRINGS[key]:
+        return STRINGS[key][lang]
+    return STRINGS[key].get(DEFAULT_LANGUAGE, key)
