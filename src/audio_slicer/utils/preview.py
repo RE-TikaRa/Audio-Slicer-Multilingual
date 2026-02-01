@@ -26,6 +26,76 @@ light_theme_palette = {
 }
 
 
+_TEXTS = {
+    "en": {
+        "xlabel": "Time/s",
+        "ylabel": "dB",
+        "length_distribution": "Length Distribution",
+        "length_ranking": "Length Ranking List",
+    },
+    "zh-CN": {
+        "xlabel": "时间/秒",
+        "ylabel": "dB",
+        "length_distribution": "长度分布",
+        "length_ranking": "长度排序",
+    },
+    "zh-TW": {
+        "xlabel": "時間/秒",
+        "ylabel": "dB",
+        "length_distribution": "長度分佈",
+        "length_ranking": "長度排序",
+    },
+    "ja": {
+        "xlabel": "時間/秒",
+        "ylabel": "dB",
+        "length_distribution": "長さ分布",
+        "length_ranking": "長さ並び替え",
+    },
+    "ko": {
+        "xlabel": "시간/초",
+        "ylabel": "dB",
+        "length_distribution": "길이 분포",
+        "length_ranking": "길이 정렬",
+    },
+    "fr": {
+        "xlabel": "Temps/s",
+        "ylabel": "dB",
+        "length_distribution": "Distribution des durées",
+        "length_ranking": "Tri des durées",
+    },
+    "de": {
+        "xlabel": "Zeit/s",
+        "ylabel": "dB",
+        "length_distribution": "Längenverteilung",
+        "length_ranking": "Längensortierung",
+    },
+    "es": {
+        "xlabel": "Tiempo/s",
+        "ylabel": "dB",
+        "length_distribution": "Distribución de longitudes",
+        "length_ranking": "Orden de longitudes",
+    },
+    "ru": {
+        "xlabel": "Время/с",
+        "ylabel": "dB",
+        "length_distribution": "Распределение длительности",
+        "length_ranking": "Сортировка длительности",
+    },
+    "pt-BR": {
+        "xlabel": "Tempo/s",
+        "ylabel": "dB",
+        "length_distribution": "Distribuição de durações",
+        "length_ranking": "Ordenação de durações",
+    },
+    "it": {
+        "xlabel": "Tempo/s",
+        "ylabel": "dB",
+        "length_distribution": "Distribuzione delle durate",
+        "length_ranking": "Ordinamento delle durate",
+    },
+}
+
+
 class SlicingPreview:
     def __init__(self,
                  filename: str,
@@ -33,13 +103,15 @@ class SlicingPreview:
                  hop_size: int,
                  total_frames: int,
                  waveform_shape: int,
-                 theme: str):
+                 theme: str,
+                 language: str = "en"):
         self.filename = filename
         self.sil_tags = sil_tags
         self.hop_size = hop_size
         self.total_frames = total_frames
         self.waveform_shape = waveform_shape
         self.theme = theme
+        self.language = language
         ori_audio, ori_sr = soundfile.read(filename, dtype=np.float32)
 
         # Convert to mono if not
@@ -105,6 +177,7 @@ class SlicingPreview:
         time = np.arange(0, len(self.audio_samples)) * (1.0 / self.target_sr)
 
         palette = dark_theme_palette if self.theme == 'dark' else light_theme_palette
+        texts = _TEXTS.get(self.language, _TEXTS["en"])
         plt.rcParams['toolbar'] = 'None'
         plt.figure(figsize=(10, 6))
 
@@ -137,13 +210,13 @@ class SlicingPreview:
         #     }
         # )
         plt.xlabel(
-            xlabel="Time/s",
+            xlabel=texts["xlabel"],
             fontdict={
                 "color": palette['axis']
             }
         )
         plt.ylabel(
-            ylabel="dB",
+            ylabel=texts["ylabel"],
             fontdict={
                 "color": palette['axis']
             }
@@ -200,7 +273,7 @@ class SlicingPreview:
             labelcolor=palette['axis']
         )
         plt.title(
-            label='Length Distribution',
+            label=texts["length_distribution"],
             fontdict={
                 "color": palette['title']
             }
@@ -234,7 +307,7 @@ class SlicingPreview:
             labelcolor=palette['axis']
         )
         plt.title(
-            label='Length Ranking List',
+            label=texts["length_ranking"],
             fontdict={
                 "color": palette['title']
             }

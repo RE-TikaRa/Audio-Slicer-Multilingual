@@ -1,4 +1,6 @@
 import os
+import shutil
+import subprocess
 import tempfile
 
 import soundfile
@@ -15,6 +17,26 @@ from audio_slicer.utils.preview import SlicingPreview
 from audio_slicer.modules import i18n
 
 APP_VERSION = "1.4.0"
+
+
+class _FallbackBridge(QObject):
+    request = Signal(str, str)
+
+    def __init__(self, window: "MainWindow"):
+        super().__init__()
+        self.window = window
+        self.mutex = QMutex()
+        self.cond = QWaitCondition()
+        self.choice: str | None = None
+        self.request.connect(self._on_request)
+
+    @Slot(str, str)
+    def _on_request(self, filename: str, error: str):
+        choice = self.window._show_fallback_dialog("process_read_failed", filename, error)
+        self.mutex.lock()
+        self.choice = choice
+        self.cond.wakeAll()
+        self.mutex.unlock()
 
 
 class MainWindow(QMainWindow):
@@ -68,6 +90,7 @@ class MainWindow(QMainWindow):
         self.current_language = i18n.normalize_language(QLocale.system().name())
         self._init_language_selector()
         self._apply_language()
+        self._fallback_bridge = _FallbackBridge(self)
 
         # Must set to accept drag and drop events
         self.setAcceptDrops(True)
@@ -172,54 +195,141 @@ class MainWindow(QMainWindow):
             def run(self):
                 for filename in self.filenames:
                     try:
-                        audio, sr = soundfile.read(filename, dtype=np.float32)
-                        is_mono = True
-                        if len(audio.shape) > 1:
-                            is_mono = False
-                            audio = audio.T
-                        slicer = Slicer(
-                            sr=sr,
-                            threshold=float(self.win.ui.leThreshold.text()),
-                            min_length=int(self.win.ui.leMinLen.text()),
-                            min_interval=int(
-                                self.win.ui.leMinInterval.text()),
-                            hop_size=int(self.win.ui.leHopSize.text()),
-                            max_sil_kept=int(self.win.ui.leMaxSilence.text())
-                        )
-                        sil_tags, total_frames, waveform_shape = slicer.get_slice_tags(audio)
-
-                        preview = SlicingPreview(
-                            filename=filename,
-                            sil_tags=sil_tags,
-                            hop_size=int(self.win.ui.leHopSize.text()),
-                            total_frames=total_frames,
-                            waveform_shape=waveform_shape,
-                            theme=self.win._get_theme()
-                        )
-                        preview.save_plot('preview.png')
-
-                        chunks = slicer.slice(audio, sil_tags, total_frames)
-                        out_dir = self.win.ui.leOutputDir.text()
-                        if out_dir == '':
-                            out_dir = os.path.dirname(os.path.abspath(filename))
-                        else:
-                            # Make dir if not exists
-                            info = QDir(out_dir)
-                            if not info.exists():
-                                info.mkpath(out_dir)
-
-                        self.win.last_output_dir = out_dir
-
-                        for i, chunk in enumerate(chunks):
-                            path = os.path.join(out_dir, f'%s_%d.{self.output_ext}' % (os.path.basename(filename)
-                                                                                       .rsplit('.', maxsplit=1)[0], i))
-                            if not is_mono:
-                                chunk = chunk.T
-                            soundfile.write(path, chunk, sr)
-                    except Exception as exc:
-                        self.errorOccurred.emit(filename, str(exc))
+                        ok = self._process_file(filename)
+                        if not ok:
+                            self.errorOccurred.emit(filename, "Skipped by user.")
                     finally:
                         self.oneFinished.emit()
+
+            def _process_file(self, filename: str) -> bool:
+                try:
+                    audio, sr = soundfile.read(filename, dtype=np.float32)
+                    self._process_audio(filename, audio, sr, filename)
+                    return True
+                except Exception as exc:
+                    choice = self.win._request_fallback_choice(filename, str(exc))
+                    if choice == "ffmpeg":
+                        return self._process_with_ffmpeg(filename)
+                    if choice == "librosa":
+                        return self._process_with_librosa(filename)
+                    return False
+
+            def _process_audio(self, source_filename: str, audio: np.ndarray, sr: int, preview_source: str):
+                is_mono = True
+                if len(audio.shape) > 1:
+                    is_mono = False
+                    audio = audio.T
+                slicer = Slicer(
+                    sr=sr,
+                    threshold=float(self.win.ui.leThreshold.text()),
+                    min_length=int(self.win.ui.leMinLen.text()),
+                    min_interval=int(self.win.ui.leMinInterval.text()),
+                    hop_size=int(self.win.ui.leHopSize.text()),
+                    max_sil_kept=int(self.win.ui.leMaxSilence.text())
+                )
+                sil_tags, total_frames, waveform_shape = slicer.get_slice_tags(audio)
+
+                preview = SlicingPreview(
+                    filename=preview_source,
+                    sil_tags=sil_tags,
+                    hop_size=int(self.win.ui.leHopSize.text()),
+                    total_frames=total_frames,
+                    waveform_shape=waveform_shape,
+                    theme=self.win._get_theme(),
+                    language=self.win.current_language,
+                )
+                preview.save_plot('preview.png')
+
+                chunks = slicer.slice(audio, sil_tags, total_frames)
+                out_dir = self.win.ui.leOutputDir.text()
+                if out_dir == '':
+                    out_dir = os.path.dirname(os.path.abspath(source_filename))
+                else:
+                    # Make dir if not exists
+                    info = QDir(out_dir)
+                    if not info.exists():
+                        info.mkpath(out_dir)
+
+                self.win.last_output_dir = out_dir
+                base_name = os.path.basename(source_filename).rsplit('.', maxsplit=1)[0]
+
+                for i, chunk in enumerate(chunks):
+                    path = os.path.join(out_dir, f'{base_name}_{i}.{self.output_ext}')
+                    if not is_mono:
+                        chunk = chunk.T
+                    soundfile.write(path, chunk, sr)
+
+            def _process_with_ffmpeg(self, filename: str) -> bool:
+                if not shutil.which("ffmpeg"):
+                    self.errorOccurred.emit(
+                        filename,
+                        i18n.text("ffmpeg_not_found", self.win.current_language),
+                    )
+                    return False
+                with tempfile.NamedTemporaryFile(
+                    prefix="audio_slicer_decode_",
+                    suffix=".wav",
+                    delete=False,
+                ) as tmp:
+                    temp_path = tmp.name
+                try:
+                    result = subprocess.run(
+                        [
+                            "ffmpeg",
+                            "-y",
+                            "-i",
+                            filename,
+                            "-vn",
+                            "-acodec",
+                            "pcm_s16le",
+                            temp_path,
+                        ],
+                        capture_output=True,
+                        text=True,
+                    )
+                    if result.returncode != 0:
+                        self.errorOccurred.emit(
+                            filename,
+                            i18n.text("ffmpeg_failed", self.win.current_language).format(
+                                error=result.stderr.strip() or result.stdout.strip(),
+                            ),
+                        )
+                        return False
+                    audio, sr = soundfile.read(temp_path, dtype=np.float32)
+                    self._process_audio(filename, audio, sr, temp_path)
+                    return True
+                finally:
+                    try:
+                        os.remove(temp_path)
+                    except OSError:
+                        pass
+
+            def _process_with_librosa(self, filename: str) -> bool:
+                try:
+                    import librosa
+                except Exception as exc:
+                    self.errorOccurred.emit(filename, str(exc))
+                    return False
+                try:
+                    audio, sr = librosa.load(filename, sr=None, mono=False)
+                    audio_for_process = audio.T if audio.ndim > 1 else audio
+                    with tempfile.NamedTemporaryFile(
+                        prefix="audio_slicer_decode_",
+                        suffix=".wav",
+                        delete=False,
+                    ) as tmp:
+                        temp_path = tmp.name
+                    soundfile.write(temp_path, audio_for_process, sr)
+                    self._process_audio(filename, audio_for_process, sr, temp_path)
+                    return True
+                except Exception as exc:
+                    self.errorOccurred.emit(filename, str(exc))
+                    return False
+                finally:
+                    try:
+                        os.remove(temp_path)
+                    except OSError:
+                        pass
 
         # Collect paths
         paths: list[str] = []
@@ -257,6 +367,17 @@ class MainWindow(QMainWindow):
                 error=error,
             ),
         )
+
+    def _request_fallback_choice(self, filename: str, error: str) -> str:
+        bridge = self._fallback_bridge
+        bridge.mutex.lock()
+        bridge.choice = None
+        bridge.request.emit(filename, error)
+        while bridge.choice is None:
+            bridge.cond.wait(bridge.mutex)
+        choice = bridge.choice or "cancel"
+        bridge.mutex.unlock()
+        return choice
 
     def _threadFinished(self):
         # Join all workers
@@ -363,17 +484,12 @@ class MainWindow(QMainWindow):
         if not filename:
             return
         try:
-            audio, sr = soundfile.read(filename, dtype=np.float32)
+            self._preview_with_file(filename)
         except Exception as exc:
-            QMessageBox.warning(
-                self,
-                i18n.text("warning_title", self.current_language),
-                i18n.text("read_failed", self.current_language).format(
-                    file=filename,
-                    error=str(exc),
-                ),
-            )
-            return
+            self._on_preview_error(filename, str(exc))
+
+    def _preview_with_file(self, filename: str):
+        audio, sr = soundfile.read(filename, dtype=np.float32)
         if len(audio.shape) > 1:
             audio = audio.T
         slicer = Slicer(
@@ -392,10 +508,131 @@ class MainWindow(QMainWindow):
             total_frames=total_frames,
             waveform_shape=waveform_shape,
             theme=self._get_theme(),
+            language=self.current_language,
         )
         preview_path = os.path.join(tempfile.gettempdir(), "audio_slicer_preview.png")
         preview.save_plot(preview_path)
         QDesktopServices.openUrl(QUrl.fromLocalFile(preview_path))
+
+    def _on_preview_error(self, filename: str, error: str):
+        choice = self._show_fallback_dialog("preview_read_failed", filename, error)
+        if choice == "ffmpeg":
+            self._preview_with_ffmpeg(filename)
+        elif choice == "librosa":
+            self._preview_with_librosa(filename)
+
+    def _show_fallback_dialog(self, prompt_key: str, filename: str, error: str) -> str:
+        msg = QMessageBox(self)
+        msg.setIcon(QMessageBox.Warning)
+        msg.setWindowTitle(i18n.text("warning_title", self.current_language))
+        msg.setText(
+            i18n.text(prompt_key, self.current_language).format(
+                file=filename,
+                error=error,
+            )
+        )
+        btn_ffmpeg = msg.addButton(
+            i18n.text("preview_use_ffmpeg", self.current_language),
+            QMessageBox.ActionRole,
+        )
+        btn_librosa = msg.addButton(
+            i18n.text("preview_use_librosa", self.current_language),
+            QMessageBox.ActionRole,
+        )
+        msg.addButton(QMessageBox.Cancel)
+        msg.exec()
+        clicked = msg.clickedButton()
+        if clicked == btn_ffmpeg:
+            return "ffmpeg"
+        if clicked == btn_librosa:
+            return "librosa"
+        return "cancel"
+
+    def _preview_with_ffmpeg(self, filename: str):
+        if not shutil.which("ffmpeg"):
+            QMessageBox.warning(
+                self,
+                i18n.text("warning_title", self.current_language),
+                i18n.text("ffmpeg_not_found", self.current_language),
+            )
+            return
+        with tempfile.NamedTemporaryFile(
+            prefix="audio_slicer_preview_",
+            suffix=".wav",
+            delete=False,
+        ) as tmp:
+            temp_path = tmp.name
+        result = subprocess.run(
+            [
+                "ffmpeg",
+                "-y",
+                "-i",
+                filename,
+                "-vn",
+                "-acodec",
+                "pcm_s16le",
+                temp_path,
+            ],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            QMessageBox.warning(
+                self,
+                i18n.text("warning_title", self.current_language),
+                i18n.text("ffmpeg_failed", self.current_language).format(
+                    error=result.stderr.strip() or result.stdout.strip(),
+                ),
+            )
+            return
+        try:
+            self._preview_with_file(temp_path)
+        except Exception as exc:
+            QMessageBox.warning(
+                self,
+                i18n.text("warning_title", self.current_language),
+                i18n.text("read_failed", self.current_language).format(
+                    file=filename,
+                    error=str(exc),
+                ),
+            )
+
+    def _preview_with_librosa(self, filename: str):
+        try:
+            import librosa
+        except Exception as exc:
+            QMessageBox.warning(
+                self,
+                i18n.text("warning_title", self.current_language),
+                i18n.text("read_failed", self.current_language).format(
+                    file=filename,
+                    error=str(exc),
+                ),
+            )
+            return
+        try:
+            audio, sr = librosa.load(filename, sr=None, mono=False)
+            if audio.ndim > 1:
+                audio_to_write = audio.T
+            else:
+                audio_to_write = audio
+            with tempfile.NamedTemporaryFile(
+                prefix="audio_slicer_preview_",
+                suffix=".wav",
+                delete=False,
+            ) as tmp:
+                temp_path = tmp.name
+            soundfile.write(temp_path, audio_to_write, sr)
+            self._preview_with_file(temp_path)
+        except Exception as exc:
+            QMessageBox.warning(
+                self,
+                i18n.text("warning_title", self.current_language),
+                i18n.text("read_failed", self.current_language).format(
+                    file=filename,
+                    error=str(exc),
+                ),
+            )
 
     # Event Handlers
     def closeEvent(self, event):
