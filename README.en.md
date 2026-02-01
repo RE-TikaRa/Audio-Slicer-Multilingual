@@ -9,6 +9,16 @@ A simple GUI application that slices audio with silence detection.
 
 ![image.png](https://s2.loli.net/2026/02/01/ONARIiVYwbsXgjF.png)
 
+## Current Version
+
+1.5.0
+
+## Release Notes (1.5.0)
+
+- Added: settings split into Basic/Advanced with grouped advanced sections and scrolling; preview moved to a separate window with zoom slider + mouse wheel; presets now support reset-to-default with completion prompt; smart parameter recommendations with one-click apply; more complete parallel and fallback options.
+- Fixed: preview unit mismatch, empty range when no slices, CLI parameter mismatch, and temp files left by fallback preview.
+- UI: unified rounded corners, list selection states, and combo popup styling.
+
 ## Features
 
 - Automatic slicing based on silence detection
@@ -18,9 +28,11 @@ A simple GUI application that slices audio with silence detection.
 - Drag & drop audio import
 - Dynamic threshold and VAD (voice activity detection)
 - Parallel slicing (multi-thread / multi-process)
-- Decode fallback: FFmpeg / Librosa
-- Presets, naming rules, and slice list export (CSV / JSON)
-- Settings tabs (Basic / Advanced)
+- Decode fallback: Ask / FFmpeg / Librosa / Skip
+- Preset management (save / delete / reset)
+- Smart parameter recommendations (optional apply)
+- Naming rules and slice list export (CSV / JSON)
+- Settings tabs (Basic / Advanced) with grouped advanced sections
 
 ## Quick Start
 
@@ -43,15 +55,33 @@ uv run python scripts/slicer.py path/to/audio.wav
 
 ## Usage
 
-- Add audio files by clicking “Add Audio Files...” or drag & drop them into the window.
-- Parameters are on the Settings panel at the right.
+- Add audio files by clicking “Add Audio Files” or drag & drop them into the window.
+- Parameters are on the Settings panel at the right, split into Basic / Advanced.
 - Language switch: use the Language dropdown in the Settings panel.
 - Enable “Open output directory when finished” to open the output folder automatically.
-- Presets: save/delete/restore defaults, with a completion prompt after reset.
+- Smart recommend: select a file and click “Generate” to apply suggested parameters.
+- Presets: save/delete/reset in Advanced; reset shows a completion prompt.
 - Naming rules: optional prefix/suffix/timestamp for outputs.
 - Export list: output CSV/JSON for slice ranges and paths.
-- The Preview button opens a separate window with a zoom slider and mouse-wheel zoom.
-- Settings are split into “Basic / Advanced”; advanced options include parallelism, fallback, dynamic threshold, and VAD.
+- The Preview button opens a separate window with a zoom slider and mouse-wheel zoom; decoding errors prompt a fallback choice.
+- Advanced includes parallelism, fallback, dynamic threshold, and VAD; multi-process mode auto-switches to “FFmpeg → Librosa”.
+
+## Presets & Recommendations
+
+- Presets store the full slicing parameter set (see list below).
+- Reset defaults will overwrite existing presets and restore built-ins.
+- Recommendations are computed from the selected audio; you can choose to apply.
+
+## Preset Parameters
+
+- Threshold, minimum length, minimum interval, hop size, maximum silence
+- Output format
+- Name prefix, name suffix, timestamp
+- Export CSV / JSON
+- Dynamic threshold toggle and offset
+- VAD toggle, sensitivity, hangover
+- Parallel mode and job count
+- Decode fallback strategy
 
 ## Parameters
 
