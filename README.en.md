@@ -5,7 +5,7 @@ A simple GUI application that slices audio with silence detection.
 
 ## Screenshot
 
-![image](./assets/screenshot_1.jpg)
+![image.png](https://s2.loli.net/2026/02/01/ONARIiVYwbsXgjF.png)
 
 ## Features
 
