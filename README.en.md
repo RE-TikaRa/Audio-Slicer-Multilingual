@@ -1,6 +1,8 @@
 # Audio Slicer
 A simple GUI application that slices audio with silence detection.
 
+[Source project](https://github.com/flutydeer/audio-slicer)
+
 [中文文档](./README.md)
 
 ## Screenshot
@@ -80,6 +82,7 @@ Logs are written to the `log/` directory for diagnosis.
 ## License
 
 See LICENSE in this repository.
+The source project is MIT licensed.
 
 ## Localization
 

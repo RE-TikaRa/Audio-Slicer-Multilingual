@@ -1,6 +1,8 @@
 # 音频切片机
 一个简约的 GUI 应用程序，通过静音检测对音频进行切片。
 
+[源项目地址](https://github.com/flutydeer/audio-slicer)
+
 [English README](./README.en.md)
 
 ## 截图
@@ -80,6 +82,7 @@ pwsh tools/pack-gui.ps1
 ## 许可
 
 本项目遵循仓库中的 LICENSE。
+源项目许可证为 MIT。
 
 ## 汉化
 
